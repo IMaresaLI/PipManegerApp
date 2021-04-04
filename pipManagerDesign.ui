@@ -55,9 +55,23 @@
         <number>0</number>
        </property>
        <item>
+        <widget class="QPushButton" name="install_Btn">
+         <property name="text">
+          <string>Install</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="update_Btn">
          <property name="text">
-          <string>Güncelleme</string>
+          <string>Update</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="uninstall_Btn">
+         <property name="text">
+          <string>Uninstall</string>
          </property>
         </widget>
        </item>
