@@ -27,10 +27,14 @@ class pipMnApp(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
         self.pipGetList()
         self.label()
-        self.webWorker()
+        if os.path.exists("Version.json") == True:
+            pass
+        else :
+            self.webWorker()
 
-
+        self.ui.install_Btn.clicked.connect(self.InstallLibrary)
         self.ui.update_Btn.clicked.connect(self.updateVersion)
+        self.ui.uninstall_Btn.clicked.connect(self.UninstallLibrary)
         self.ui.surum_Btn.clicked.connect(self.checkVersion)
 
     def pipGetList(self):
@@ -48,7 +52,6 @@ class pipMnApp(QtWidgets.QMainWindow):
                 version = json.load(file)
         except :
             pass
-        n=0
         for i in piplistTxt:        
             x = i.split(" ")
             a = QtWidgets.QTreeWidgetItem(self.ui.treeWidget)
@@ -58,14 +61,26 @@ class pipMnApp(QtWidgets.QMainWindow):
                 if x[0] == "Package" or x[0] == "Version" or x[0] == "----------------------" or x[0] == "------------" or x == ['']:
                     pass
                 else :
-                    a.setText(2,version[n][x[0]])
-                    n+=1
+                    a.setText(2,version[x[0]])
             else :
                 a.setText(2,"Updating")
                 
         self.ui.treeWidget.takeTopLevelItem(0).removeChild(a)
         self.ui.treeWidget.takeTopLevelItem(0).removeChild(a)
         self.btnStatus(True)
+
+
+    def InstallLibrary(self):
+        self.btnStatus(False)
+        text,ok = QtWidgets.QInputDialog.getText(self,"İndirme Sayfası","Kütüphane ismini giriniz:") 
+        if text and ok:
+            result = QtWidgets.QMessageBox.question(self,"İndirme Onayı",f"{text} adlı kütüphaneyi indirmek istiyor musunuz?",QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+            if result == QtWidgets.QMessageBox.Ok:
+                subprocess.Popen("pip install "+text)
+                self.InstallVersJson(text)
+                QtWidgets.QMessageBox.information(self,"Yükleme Bilgisi",f"{text} kütüphanesi yüklendi.")
+                self.btnStatus(True)
+                self.pipGetList()
 
     def updateVersion(self):
         global ProcessText
@@ -78,6 +93,23 @@ class pipMnApp(QtWidgets.QMainWindow):
                 self.btnStatus(False)
                 ProcessText = f"pip install {currentData.data(0,0)} --upgrade"
                 self.processWorker()
+
+
+    def UninstallLibrary(self):
+        self.btnStatus(False)
+        currentData = self.ui.treeWidget.currentItem()
+        result = QtWidgets.QMessageBox.question(self,"Silme Onayı",f"{currentData.data(0,0)} adlı kütüphaneyi silmek istiyor musunuz?",QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+        if result == QtWidgets.QMessageBox.Ok:
+            subprocess.Popen(f"pip uninstall {currentData.data(0,0)} -y")
+            time.sleep(3)
+            QtWidgets.QMessageBox.information(self,"Silme Bilgisi",f"{currentData.data(0,0)} kütüphanesi silindi.")
+            with open("Version.json","r") as file :
+                Lib_Vers = json.load(file)
+            Lib_Vers.pop(currentData.data(0,0))
+            with open("Version.json","w+") as file :
+                json.dump(Lib_Vers,file)
+            self.btnStatus(True)
+            self.pipGetList()
 
     def webWorker(self):
         self.btnStatus(False)
@@ -101,7 +133,6 @@ class pipMnApp(QtWidgets.QMainWindow):
         except Exception as err:
             pass
         finally :
-            self.pipGetList()
             self.btnStatus(True)
 
 
@@ -111,27 +142,43 @@ class pipMnApp(QtWidgets.QMainWindow):
         time.sleep(5)
         self.pipGetList()
         
-
-
     def label(self):
         self.movie = QtGui.QMovie("PythonLogo.gif")
         self.ui.LogoPython.setMovie(self.movie)
         self.movie.start()
 
     def btnStatus(self,Status):
+        self.ui.install_Btn.setEnabled(Status)
+        self.ui.uninstall_Btn.setEnabled(Status)
         self.ui.update_Btn.setEnabled(Status)
         self.ui.surum_Btn.setEnabled(Status)
-
 
     def checkVersion(self):
         self.btnStatus(False)
         self.webWorker()
         self.pipGetList()
 
+    def InstallVersJson(self,text):
+        url = "https://pypi.org/project/"+text+"/"
+        html = requests.get(url).content
+        soup = BeautifulSoup(html,"html.parser")
+        version = soup.find("h1",{"class":"package-header__name"})
+        textVersion = version.text
+        splText = textVersion.strip().split(" ")
+        with open("Version.json","r") as file :
+            Lib_Vers = json.load(file)
+        print({splText[0]:splText[1]})
+        Lib_Vers.update({splText[0]:splText[1]})
+        with open("Version.json","w+") as file :
+            json.dump(Lib_Vers,file)
+
+
+
+
 
 class WebWorker(QtCore.QThread):
     def run(self):
-        list = []
+        dict = {}
         pipList = open("piplist.txt","r")
         piplistTxt = pipList.read().split("\n")
         for i in piplistTxt:        
@@ -147,12 +194,12 @@ class WebWorker(QtCore.QThread):
                     version = soup.find("h1",{"class":"package-header__name"})
                     text = version.text
                     splText = text.strip().split(" ")
-                    list.append({x[0]:splText[1]})
+                    dict.update({x[0]:splText[1]})
                     print("Çalıştı")
             except :
-                print("Hata")
+                print(x[0])
         with open("Version.json","w+") as file :
-            json.dump(list,file)
+            json.dump(dict,file)
 
 
 class ProcessWorker(QtCore.QThread):
