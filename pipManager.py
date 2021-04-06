@@ -135,7 +135,6 @@ class pipMnApp(QtWidgets.QMainWindow):
         finally :
             self.btnStatus(True)
 
-
     def processWorkerStop(self):
         QtWidgets.QMessageBox.information(self,"Bildirim",f"{ProcessText} - İşleminiz Tamamlandı.\n")
         self.btnStatus(True)
@@ -206,12 +205,6 @@ class ProcessWorker(QtCore.QThread):
     def run(self):
         for i in range(1):
             subprocess.Popen(ProcessText)
-        
-
-
-
-
-
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
